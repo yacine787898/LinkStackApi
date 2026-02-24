@@ -69,5 +69,6 @@ class Kernel extends HttpKernel
         'blocked' => \App\Http\Middleware\CheckBlockedUser::class,
         'max.users' => \App\Http\Middleware\MaxUsers::class,
         'impersonate' => \App\Http\Middleware\Impersonate::class,
+        'provision.token' => \App\Http\Middleware\VerifyProvisionToken::class,
     ];
 }
