@@ -79,3 +79,5 @@ function valid_http_url(string $url): bool
 
     return in_array($scheme, ['http', 'https'], true);
 }
+
+require __DIR__ . '/provisioning.php';

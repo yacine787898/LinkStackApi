@@ -40,3 +40,14 @@ php -S 0.0.0.0:8080 -t .
 
 - Le mot de passe auto-généré n'est pas réaffiché (comportement volontaire).
 - Les avatars sont sauvegardés dans `assets/img` pour rester compatibles avec la logique existante LinkStack.
+
+
+## API (optionnel)
+
+Un endpoint JSON est disponible pour créer les comptes à distance :
+
+- `sqltest/api_create_account.php`
+
+Voir la doc dédiée :
+
+- `sqltest/API.md`
