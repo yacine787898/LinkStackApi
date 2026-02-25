@@ -74,8 +74,8 @@ if (!empty($oldInput)) {
             <label for="links">Liens (1 par ligne au format: <code>Titre|https://url</code>)</label>
             <textarea id="links" name="links" rows="8" placeholder="Site|https://example.com&#10;Docs|https://docs.example.com"><?= e(old('links')) ?></textarea>
             <p class="hint">Maximum <?= (int) $config['max_links'] ?> liens. Ordre = ordre des lignes.</p>
-            <p class="hint">Titres reconnus en sites prédéfinis : instagram, facebook, whatsapp, x, snapchat, telegram, tiktok, paypal, spotify, deezer, discord, github, gitlab, messenger, pinterest/pintrest, linkedin, reddit, steam, twitch, youtube.
-            Pour blocs spéciaux : <code>Email|mailto:mail@domaine.com</code> (ou email brut) et <code>Tel|tel://+213555555555</code>.</p>
+            <p class="hint">Titres reconnus en sites prédéfinis : Instagram, Facebook, WhatsApp, X, Snapchat, Telegram, TikTok, PayPal, Spotify, Deezer, Discord, GitHub, GitLab, Messenger, Pinterest/Pintrest, LinkedIn, Reddit, Steam, Twitch, YouTube.</p>
+            <p class="hint">Blocs spéciaux : <code>Adresse email|mailto:mail@domaine.com</code> (ou email brut) et <code>Téléphone|tel://+213555555555</code>.</p>
 
             <label for="avatar_file">Avatar (optionnel)</label>
             <input id="avatar_file" name="avatar_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif">

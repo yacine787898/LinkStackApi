@@ -35,6 +35,7 @@ php -S 0.0.0.0:8080 -t .
 - Validation (serveur) + CSRF.
 - Transaction SQL : rollback si erreur.
 - Utilise les mêmes tables que LinkStack.
+- Les comptes créés via sqltest sont automatiquement marqués email vérifié (`email_verified_at`).
 
 ## Notes
 
@@ -46,7 +47,7 @@ php -S 0.0.0.0:8080 -t .
 
 Un endpoint JSON est disponible pour créer les comptes à distance :
 
-- `sqltest/api_create_account.php`
+- `sqltest/api_create_account.php` (avec support avatar via `avatar.type=url|base64`)
 
 Voir la doc dédiée :
 

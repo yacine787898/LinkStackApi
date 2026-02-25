@@ -2,40 +2,45 @@
 
 declare(strict_types=1);
 
+const SQLTEST_MAX_AVATAR_BYTES = 2097152;
+
 /**
- * Titre saisi -> nom interne du bouton LinkStack (table buttons.name)
+ * Titre saisi -> méta LinkStack
  */
-function resolve_button_name_from_title(string $title): string
+function resolve_link_metadata_from_title(string $title): array
 {
     $normalized = mb_strtolower(trim($title));
 
     $map = [
-        'instagram' => 'instagram',
-        'facebook' => 'facebook',
-        'whatsapp' => 'whatsapp',
-        'x' => 'twitter',
-        'snapchat' => 'snapchat',
-        'telegram' => 'telegram',
-        'tiktok' => 'tiktok',
-        'paypal' => 'paypal',
-        'spotify' => 'spotify',
-        'deezer' => 'deezer',
-        'discord' => 'discord',
-        'github' => 'github',
-        'gitlab' => 'gitlab',
-        'messenger' => 'messenger',
-        'pinterest' => 'pinterest',
-        'pintrest' => 'pinterest',
-        'linkedin' => 'linkedin',
-        'reddit' => 'reddit',
-        'steam' => 'steam',
-        'twitch' => 'twitch',
-        'youtube' => 'youtube',
-        'email' => 'default email',
-        'tel' => 'phone',
+        'instagram' => ['button_name' => 'instagram', 'display_title' => 'Instagram'],
+        'facebook' => ['button_name' => 'facebook', 'display_title' => 'Facebook'],
+        'whatsapp' => ['button_name' => 'whatsapp', 'display_title' => 'WhatsApp'],
+        'x' => ['button_name' => 'twitter', 'display_title' => 'X'],
+        'snapchat' => ['button_name' => 'snapchat', 'display_title' => 'Snapchat'],
+        'telegram' => ['button_name' => 'telegram', 'display_title' => 'Telegram'],
+        'tiktok' => ['button_name' => 'tiktok', 'display_title' => 'TikTok'],
+        'paypal' => ['button_name' => 'paypal', 'display_title' => 'PayPal'],
+        'spotify' => ['button_name' => 'spotify', 'display_title' => 'Spotify'],
+        'deezer' => ['button_name' => 'deezer', 'display_title' => 'Deezer'],
+        'discord' => ['button_name' => 'discord', 'display_title' => 'Discord'],
+        'github' => ['button_name' => 'github', 'display_title' => 'GitHub'],
+        'gitlab' => ['button_name' => 'gitlab', 'display_title' => 'GitLab'],
+        'messenger' => ['button_name' => 'messenger', 'display_title' => 'Messenger'],
+        'pinterest' => ['button_name' => 'pinterest', 'display_title' => 'Pinterest'],
+        'pintrest' => ['button_name' => 'pinterest', 'display_title' => 'Pinterest'],
+        'linkedin' => ['button_name' => 'linkedin', 'display_title' => 'LinkedIn'],
+        'reddit' => ['button_name' => 'reddit', 'display_title' => 'Reddit'],
+        'steam' => ['button_name' => 'steam', 'display_title' => 'Steam'],
+        'twitch' => ['button_name' => 'twitch', 'display_title' => 'Twitch'],
+        'youtube' => ['button_name' => 'youtube', 'display_title' => 'YouTube'],
+        'email' => ['button_name' => 'default email', 'display_title' => 'Adresse email'],
+        'adresse email' => ['button_name' => 'default email', 'display_title' => 'Adresse email'],
+        'tel' => ['button_name' => 'phone', 'display_title' => 'Téléphone'],
+        'telephone' => ['button_name' => 'phone', 'display_title' => 'Téléphone'],
+        'téléphone' => ['button_name' => 'phone', 'display_title' => 'Téléphone'],
     ];
 
-    return $map[$normalized] ?? 'littlelink-custom';
+    return $map[$normalized] ?? ['button_name' => 'littlelink-custom', 'display_title' => trim($title)];
 }
 
 function valid_link_url_for_button(string $url, string $buttonName): bool
@@ -114,18 +119,18 @@ function parse_links_input(string $linksInput, int $maxLinks): array
             continue;
         }
 
-        $buttonName = resolve_button_name_from_title($title);
+        $meta = resolve_link_metadata_from_title($title);
 
-        if (!valid_link_url_for_button($url, $buttonName)) {
+        if (!valid_link_url_for_button($url, $meta['button_name'])) {
             $errors[] = "URL invalide pour {$title}: {$url}";
             continue;
         }
 
         $parsedLinks[] = [
-            'title' => $title,
+            'title' => $meta['display_title'],
             'url' => $url,
             'order' => $order++,
-            'button_name' => $buttonName,
+            'button_name' => $meta['button_name'],
         ];
     }
 
@@ -136,7 +141,158 @@ function parse_links_input(string $linksInput, int $maxLinks): array
     return [$parsedLinks, $errors];
 }
 
-function create_sqltest_account(PDO $pdo, array $config, array $payload, ?array $avatarFile = null): array
+function validate_avatar_image_binary(string $binary): array
+{
+    if (strlen($binary) > SQLTEST_MAX_AVATAR_BYTES) {
+        throw new RuntimeException('Avatar trop volumineux (max 2 Mo).');
+    }
+
+    $mime = finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $binary) ?: '';
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+    ];
+
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Type d\'avatar non autorisé.');
+    }
+
+    return ['mime' => $mime, 'extension' => $allowed[$mime]];
+}
+
+function store_avatar_binary(int $userId, string $binary, string $extension): void
+{
+    $targetDir = realpath(__DIR__ . '/../assets/img');
+    if ($targetDir === false) {
+        throw new RuntimeException('Dossier assets/img introuvable.');
+    }
+
+    $filename = $userId . '_' . time() . '.' . $extension;
+    $targetPath = $targetDir . DIRECTORY_SEPARATOR . $filename;
+
+    if (file_put_contents($targetPath, $binary) === false) {
+        throw new RuntimeException('Échec de sauvegarde de l\'avatar.');
+    }
+}
+
+function download_binary_from_url(string $url): string
+{
+    if (!valid_http_url($url)) {
+        throw new RuntimeException('avatar.url doit être une URL http(s).');
+    }
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        $body = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        if (!is_string($body) || $httpCode < 200 || $httpCode >= 300) {
+            throw new RuntimeException('Téléchargement avatar.url impossible.');
+        }
+
+        if ($contentType !== '' && stripos($contentType, 'image/') !== 0) {
+            throw new RuntimeException('avatar.url doit pointer vers une image.');
+        }
+
+        return $body;
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 10,
+            'follow_location' => 1,
+            'max_redirects' => 3,
+        ],
+    ]);
+
+    $body = @file_get_contents($url, false, $context);
+    if (!is_string($body)) {
+        throw new RuntimeException('Téléchargement avatar.url impossible.');
+    }
+
+    return $body;
+}
+
+function process_api_avatar_payload(?array $avatarPayload): ?array
+{
+    if ($avatarPayload === null) {
+        return null;
+    }
+
+    $type = mb_strtolower(trim((string) ($avatarPayload['type'] ?? 'none')));
+    $value = (string) ($avatarPayload['value'] ?? '');
+
+    if ($type === 'none') {
+        return null;
+    }
+
+    if (!in_array($type, ['url', 'base64'], true)) {
+        throw new RuntimeException('avatar.type invalide (none|url|base64).');
+    }
+
+    if ($value === '') {
+        throw new RuntimeException('avatar.value requis.');
+    }
+
+    $binary = '';
+    if ($type === 'url') {
+        $binary = download_binary_from_url($value);
+    } else {
+        $raw = preg_replace('/^data:image\/[a-zA-Z0-9.+-]+;base64,/', '', $value);
+        $decoded = base64_decode((string) $raw, true);
+        if ($decoded === false) {
+            throw new RuntimeException('avatar base64 invalide.');
+        }
+        $binary = $decoded;
+    }
+
+    $imageMeta = validate_avatar_image_binary($binary);
+
+    return [
+        'binary' => $binary,
+        'extension' => $imageMeta['extension'],
+    ];
+}
+
+function process_uploaded_avatar_file(?array $avatarFile): ?array
+{
+    if ($avatarFile === null || ($avatarFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($avatarFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Erreur upload avatar.');
+    }
+
+    $tmpName = (string) ($avatarFile['tmp_name'] ?? '');
+    if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+        throw new RuntimeException('Fichier avatar invalide.');
+    }
+
+    $binary = file_get_contents($tmpName);
+    if (!is_string($binary)) {
+        throw new RuntimeException('Lecture avatar impossible.');
+    }
+
+    $imageMeta = validate_avatar_image_binary($binary);
+
+    return [
+        'binary' => $binary,
+        'extension' => $imageMeta['extension'],
+    ];
+}
+
+function create_sqltest_account(PDO $pdo, array $config, array $payload, ?array $avatarFile = null, ?array $avatarPayload = null): array
 {
     $errors = [];
 
@@ -170,6 +326,17 @@ function create_sqltest_account(PDO $pdo, array $config, array $payload, ?array 
 
     [$parsedLinks, $linkErrors] = parse_links_input($linksInput, (int) $config['max_links']);
     $errors = array_merge($errors, $linkErrors);
+
+    $finalAvatar = null;
+    try {
+        if ($avatarPayload !== null) {
+            $finalAvatar = process_api_avatar_payload($avatarPayload);
+        } else {
+            $finalAvatar = process_uploaded_avatar_file($avatarFile);
+        }
+    } catch (Throwable $avatarError) {
+        $errors[] = $avatarError->getMessage();
+    }
 
     if (!empty($errors)) {
         return ['ok' => false, 'errors' => $errors];
@@ -210,7 +377,7 @@ function create_sqltest_account(PDO $pdo, array $config, array $payload, ?array 
         $passwordPlain = $passwordInput !== '' ? $passwordInput : bin2hex(random_bytes(16));
         $passwordHash = password_hash($passwordPlain, PASSWORD_BCRYPT);
 
-        $insertUser = $pdo->prepare('INSERT INTO users (name, email, password, littlelink_name, littlelink_description, role, block, created_at, updated_at) VALUES (:name, :email, :password, :littlelink_name, :littlelink_description, :role, :block, NOW(), NOW())');
+        $insertUser = $pdo->prepare('INSERT INTO users (name, email, email_verified_at, password, littlelink_name, littlelink_description, role, block, created_at, updated_at) VALUES (:name, :email, NOW(), :password, :littlelink_name, :littlelink_description, :role, :block, NOW(), NOW())');
         $insertUser->execute([
             'name' => $displayName,
             'email' => $email,
@@ -245,37 +412,8 @@ function create_sqltest_account(PDO $pdo, array $config, array $payload, ?array 
             }
         }
 
-        if ($avatarFile !== null && ($avatarFile['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            $tmpName = (string) $avatarFile['tmp_name'];
-            $size = (int) $avatarFile['size'];
-
-            if ($size > 2 * 1024 * 1024) {
-                throw new RuntimeException('Avatar trop volumineux (max 2 Mo).');
-            }
-
-            $mime = mime_content_type($tmpName) ?: '';
-            $allowed = [
-                'image/jpeg' => 'jpg',
-                'image/png' => 'png',
-                'image/webp' => 'webp',
-                'image/gif' => 'gif',
-            ];
-
-            if (!isset($allowed[$mime])) {
-                throw new RuntimeException('Type d\'avatar non autorisé.');
-            }
-
-            $targetDir = realpath(__DIR__ . '/../assets/img');
-            if ($targetDir === false) {
-                throw new RuntimeException('Dossier assets/img introuvable.');
-            }
-
-            $filename = $userId . '_' . time() . '.' . $allowed[$mime];
-            $targetPath = $targetDir . DIRECTORY_SEPARATOR . $filename;
-
-            if (!move_uploaded_file($tmpName, $targetPath)) {
-                throw new RuntimeException('Échec de sauvegarde de l\'avatar.');
-            }
+        if ($finalAvatar !== null) {
+            store_avatar_binary($userId, $finalAvatar['binary'], $finalAvatar['extension']);
         }
 
         $pdo->commit();

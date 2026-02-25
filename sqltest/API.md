@@ -33,12 +33,28 @@ Content-Type: application/json
   "password": "MotDePasseSuperLong123!",
   "bio": "Bio du profil",
   "links": [
-    { "title": "site web", "url": "https://meneeto.com" },
+    { "title": "Site web", "url": "https://meneeto.com" },
     { "title": "Instagram", "url": "https://instagram.com/username" },
     { "title": "Facebook", "url": "https://facebook.com/userxxxxxx" },
-    { "title": "Tel", "url": "tel://+213555555555" },
-    { "title": "Email", "url": "mailto:me@example.com" }
-  ]
+    { "title": "Téléphone", "url": "tel://+213555555555" },
+    { "title": "Adresse email", "url": "mailto:me@example.com" }
+  ],
+  "avatar": {
+    "type": "url",
+    "value": "https://exemple.com/avatar.jpg"
+  }
+}
+```
+
+### Avatar via base64
+
+```json
+{
+  "display_name": "Mon User",
+  "avatar": {
+    "type": "base64",
+    "value": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+  }
 }
 ```
 
@@ -47,15 +63,15 @@ Content-Type: application/json
 ```json
 {
   "display_name": "Mon User",
-  "links_text": "site web|https://meneeto.com\nInstagram|https://instagram.com/username\nTel|tel://+213555555555"
+  "links_text": "Site web|https://meneeto.com\nInstagram|https://instagram.com/username\nTéléphone|tel://+213555555555"
 }
 ```
 
 ## Titres reconnus comme sites prédéfinis
 
-- instagram, facebook, whatsapp, x, snapchat, telegram, tiktok, paypal, spotify, deezer, discord, github, gitlab, messenger, pinterest (ou pintrest), linkedin, reddit, steam, twitch, youtube.
-- `Email` -> bouton LinkStack email (`default email`) ; URL acceptée : `mailto:` ou email brut.
-- `Tel` -> bouton LinkStack phone (`phone`) ; URL acceptée : schéma `tel://`.
+- Instagram, Facebook, WhatsApp, X, Snapchat, Telegram, TikTok, PayPal, Spotify, Deezer, Discord, GitHub, GitLab, Messenger, Pinterest (ou Pintrest), LinkedIn, Reddit, Steam, Twitch, YouTube.
+- `Adresse email` (ou `Email`) -> bouton LinkStack email (`default email`) ; URL acceptée : `mailto:` ou email brut.
+- `Téléphone` (ou `Tel`) -> bouton LinkStack phone (`phone`) ; URL acceptée : schéma `tel://`.
 - Tout autre titre -> lien personnalisé (`littlelink-custom`).
 
 ## Réponses
@@ -84,9 +100,15 @@ curl -X POST "https://votre-domaine.tld/sqltest/api_create_account.php" \
   -d '{
     "display_name": "Mon User",
     "links": [
-      {"title":"site web","url":"https://meneeto.com"},
+      {"title":"Site web","url":"https://meneeto.com"},
       {"title":"Instagram","url":"https://instagram.com/username"},
-      {"title":"Tel","url":"tel://+213555555555"}
-    ]
+      {"title":"Téléphone","url":"tel://+213555555555"}
+    ],
+    "avatar": {"type":"url","value":"https://exemple.com/avatar.jpg"}
   }'
 ```
+
+## Notes importantes
+
+- Les comptes créés via `/sqltest` (formulaire et API) sont automatiquement marqués comme **email vérifié** (`email_verified_at` rempli à la création).
+- Taille avatar max : 2 Mo.

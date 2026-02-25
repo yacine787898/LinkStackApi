@@ -51,6 +51,14 @@ if (isset($data['links']) && is_array($data['links'])) {
     $linksText = (string) ($data['links_text'] ?? '');
 }
 
+$avatarPayload = null;
+if (isset($data['avatar']) && is_array($data['avatar'])) {
+    $avatarPayload = [
+        'type' => (string) ($data['avatar']['type'] ?? 'none'),
+        'value' => (string) ($data['avatar']['value'] ?? ''),
+    ];
+}
+
 $result = create_sqltest_account($pdo, $config, [
     'display_name' => (string) ($data['display_name'] ?? ''),
     'username' => (string) ($data['username'] ?? ''),
@@ -58,7 +66,7 @@ $result = create_sqltest_account($pdo, $config, [
     'password' => (string) ($data['password'] ?? ''),
     'bio' => (string) ($data['bio'] ?? ''),
     'links' => $linksText,
-], null);
+], null, $avatarPayload);
 
 if (!$result['ok']) {
     http_response_code(422);
